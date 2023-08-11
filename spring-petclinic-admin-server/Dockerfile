@@ -1,0 +1,16 @@
+FROM ubuntu
+RUN apt-get update -y
+RUN apt-get install wget -y
+RUN apt-get -qqy install openjdk-17-jdk openjdk-17-jre
+#copie du jar dans l'image docker
+COPY target/spring-petclinic-admin-server-3.0.2.jar app.jar
+ENV DOCKERIZE_VERSION v0.7.0
+RUN apt-get update \
+    && apt-get install -y wget \
+    && wget -O dockerize.tar.gz https://github.com/jwilder/dockerize/releases/download/$DOCKERIZE_VERSION/dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz \
+    && apt-get autoremove -yqq --purge wget && rm -rf /var/lib/apt/lists/*
+RUN tar xzf dockerize.tar.gz
+RUN chmod +x dockerize
+#dmin-server ne demarre pas si discovery-server n'a pas demarree or comme discovery-server doit attendre
+#que admin-server demarre donc les deux microservices auront demarre d'abord
+entrypoint ["./dockerize","-wait=tcp://discovery-server:8761","-timeout=60s","--","java","-jar", "app.jar"]
